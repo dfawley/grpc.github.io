@@ -15,11 +15,15 @@ working example.</p>
 ### Prerequisites
 
 *   `JDK`: version 7 or higher
-*   Android SDK
+*   Android SDK: API level 14 or higher
 *   An android device set up for [USB
     debugging](https://developer.android.com/studio/command-line/adb.html#Enabling)
     or an [Android Virtual
     Device](https://developer.android.com/studio/run/managing-avds.html)
+
+Note: gRPC Java does not support running a server on an Android device. For this
+quickstart, the Android client app will connect to a server running on your
+local (non-Android) computer.
 
 ## Download the example
 

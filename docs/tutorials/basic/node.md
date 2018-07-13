@@ -169,13 +169,23 @@ message Point {
 The Node.js library dynamically generates service descriptors and client stub
 definitions from `.proto` files loaded at runtime.
 
-To load a `.proto` file, simply `require` the gRPC library, then use its
-`load()` method:
+To load a `.proto` file, simply `require` the gRPC proto loader library and use its
+`loadSync()` method, then pass the output to the gRPC library's `loadPackageDefinition` method:
 
 ```js
 var PROTO_PATH = __dirname + '/../../../protos/route_guide.proto';
 var grpc = require('grpc');
-var protoDescriptor = grpc.load(PROTO_PATH);
+var protoLoader = require('@grpc/proto-loader');
+// Suggested options for similarity to existing grpc.load behavior
+var packageDefinition = protoLoader.loadSync(
+    PROTO_PATH,
+    {keepCase: true,
+     longs: String,
+     enums: String,
+     defaults: true,
+     oneofs: true
+    });
+var protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 // The protoDescriptor object has the full package hierarchy
 var routeguide = protoDescriptor.routeguide;
 ```
@@ -432,6 +442,9 @@ var call = client.listFeatures(rectangle);
   call.on('end', function() {
     // The server has finished sending
   });
+  call.on('error', function(e) {
+    // An error has occurred and the stream has been closed.
+  });
   call.on('status', function(status) {
     // process status
   });
@@ -440,9 +453,12 @@ var call = client.listFeatures(rectangle);
 Instead of passing the method a request and callback, we pass it a request and
 get a `Readable` stream object back. The client can use the `Readable`'s
 `'data'` event to read the server's responses. This event fires with each
-`Feature` message object until there are no more messages: the `'end'` event
-indicates that the call is done. Finally, the status event fires when the server
-sends the status.
+`Feature` message object until there are no more messages. Errors in the `'data'`
+callback will not cause the stream to be closed. The `'error'` event
+indicates that an error has occurred and the stream has been closed. The
+`'end'` event indicates that the server has finished sending and no errors
+occured. Only one of `'error'` or `'end'` will be emitted. Finally, the
+`'status'` event fires when the server sends the status.
 
 The client-side streaming method `RecordRoute` is similar, except there we pass
 the method a callback and get back a `Writable`.

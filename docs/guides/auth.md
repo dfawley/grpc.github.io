@@ -177,6 +177,67 @@ languages. The following sections demonstrate how authentication and
 authorization features described above appear in each language: more languages
 are coming soon.
 
+### Go
+
+#### Base case - no encryption or authentication
+
+Client:
+
+``` go
+conn, _ := grpc.Dial("localhost:50051", grpc.WithInsecure())
+// error handling omitted
+client := pb.NewGreeterClient(conn)
+// ...
+```
+
+Server:
+
+``` go
+s := grpc.NewServer()
+lis, _ := net.Listen("tcp", "localhost:50051")
+// error handling omitted
+s.Serve(lis)
+```
+
+#### With server authentication SSL/TLS
+
+Client:
+
+``` go
+creds := credentials.NewClientTLSFromFile(certFile, "")
+conn, _ := grpc.Dial("localhost:50051", grpc.WithTransportCredentials(creds))
+// error handling omitted
+client := pb.NewGreeterClient(conn)
+// ...
+```
+
+Server:
+
+``` go
+creds := credentials.NewServerTLSFromFile(certFile, keyFile)
+s := grpc.NewServer(grpc.Creds(creds))
+lis, _ := net.Listen("tcp", "localhost:50051")
+// error handling omitted
+s.Serve(lis)
+```
+
+#### Authenticate with Google
+
+``` go
+pool, _ := x509.SystemCertPool()
+// error handling omitted
+creds := credentials.NewClientTLSFromCert(pool, "")
+perRPC, _ := oauth.NewServiceAccountFromFile("service-account.json", scope)
+conn, _ := grpc.Dial(
+	"greeter.googleapis.com",
+	grpc.WithTransportCredentials(creds),
+	grpc.WithPerRPCCredentials(perRPC),
+)
+// error handling omitted
+client := pb.NewGreeterClient(conn)
+// ...
+```
+
 ### Ruby
 
 #### Base case - no encryption or authentication
@@ -291,6 +352,8 @@ stub = helloworld_pb2.GreeterStub(channel)
 
 #### With server authentication SSL/TLS
 
+Client:
+
 ```python
 import grpc
 import helloworld_pb2
@@ -298,6 +361,22 @@ import helloworld_pb2
 creds = grpc.ssl_channel_credentials(open('roots.pem').read())
 channel = grpc.secure_channel('myservice.example.com:443', creds)
 stub = helloworld_pb2.GreeterStub(channel)
+```
+
+Server:
+
+```python
+import grpc
+import helloworld_pb2
+
+server = grpc.server(futures.ThreadPoolExecutor(max_workers=10)
+private_key = open('key.pem').read()
+certificate_chain = open('chain.pem').read()
+server_credentials = grpc.ssl_server_credentials( ( (private_key, certificate_chain), ) )
+# Adding GreeterServicer to server omitted
+server.add_secure_port('myservice.example.com:443', server_credentials)
+server.start()
+# Server sleep omitted
 ```
 
 #### Authenticate with Google using a JWT
@@ -356,7 +435,10 @@ Android and non-Android Java in the gRPC Java
 documentation.
 
 To enable TLS on a server, a certificate chain and private key need to be
-specified in PEM format. The standard TLS port is 443, but we use 8443 below to
+specified in PEM format. Such private key should not be using a password.
+The order of certificates in the chain matters: more specifically, the certificate
+at the top has to be the host CA, while the one at the very bottom
+has to be the root CA. The standard TLS port is 443, but we use 8443 below to
 avoid needing extra permissions from the OS.
 
 ```java
@@ -491,4 +573,55 @@ $opts = [
   'update_metadata' => $auth->getUpdateMetadataFunc(),
 ];
 $client = new helloworld\GreeterClient('greeter.googleapis.com', $opts);
+```
+
+### Dart
+
+#### Base case - no encryption or authentication
+
+```dart
+final channel = new ClientChannel('localhost',
+      port: 50051,
+      options: const ChannelOptions(
+          credentials: const ChannelCredentials.insecure()));
+final stub = new GreeterClient(channel);
+```
+
+#### With server authentication SSL/TLS
+
+```dart
+// Load a custom roots file.
+final trustedRoot = new File('roots.pem').readAsBytesSync();
+final channelCredentials =
+    new ChannelCredentials.secure(certificates: trustedRoot);
+final channelOptions = new ChannelOptions(credentials: channelCredentials);
+final channel = new ClientChannel('myservice.example.com',
+    options: channelOptions);
+final client = new GreeterClient(channel);
+```
+
+#### Authenticate with Google
+
+```dart
+// Uses publicly trusted roots by default.
+final channel = new ClientChannel('greeter.googleapis.com');
+final serviceAccountJson =
+     new File('service-account.json').readAsStringSync();
+final credentials = new JwtServiceAccountAuthenticator(serviceAccountJson);
+final client =
+    new GreeterClient(channel, options: credentials.toCallOptions);
+```
+
+#### Authenticate a single RPC call
+
+```dart
+// Uses publicly trusted roots by default.
+final channel = new ClientChannel('greeter.googleapis.com');
+final client = new GreeterClient(channel);
+...
+final serviceAccountJson =
+     new File('service-account.json').readAsStringSync();
+final credentials = new JwtServiceAccountAuthenticator(serviceAccountJson);
+final response =
+    await client.sayHello(request, options: credentials.toCallOptions);
 ```

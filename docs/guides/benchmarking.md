@@ -33,15 +33,16 @@ CPU is spent.
   * [C++ full-stack microbenchmarks](https://performance-dot-grpc-testing.appspot.com/explore?dashboard=5684961520648192)
   * [C Core filter benchmarks](https://performance-dot-grpc-testing.appspot.com/explore?dashboard=5740240702537728)
   * [C Core shared component benchmarks](https://performance-dot-grpc-testing.appspot.com/explore?dashboard=5641826627223552&container=789696829&widget=512792852)
+  * [C Core HTTP/2 microbenchmarks](https://performance-dot-grpc-testing.appspot.com/explore?dashboard=5732910535540736)
 
 ## Performance testing design
 
 Each language implements a performance testing worker that implements
 a gRPC
-[WorkerService](https://github.com/grpc/grpc/blob/master/src/proto/grpc/testing/services.proto). This
+[WorkerService](https://github.com/grpc/grpc/blob/master/src/proto/grpc/testing/worker_service.proto). This
 service directs the worker to act as either a client or a server for
 the actual benchmark test, represented as
-[BenchmarkService](https://github.com/grpc/grpc/blob/master/src/proto/grpc/testing/services.proto). That
+[BenchmarkService](https://github.com/grpc/grpc/blob/master/src/proto/grpc/testing/benchmark_service.proto). That
 service has two methods:
 
   * UnaryCall - a unary RPC of a simple request that specifies the number of bytes to return in the response

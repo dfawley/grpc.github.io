@@ -157,7 +157,7 @@ Next we need to generate the gRPC client and server interfaces from our .proto
 service definition. We do this using the protocol buffer compiler `protoc` with
 a special gRPC C++ plugin.
 
-For simplicity, we've provided a [makefile](https://github.com/grpc/grpc/blob/
+For simplicity, we've provided a [Makefile](https://github.com/grpc/grpc/blob/
 {{ site.data.config.grpc_release_branch }}/examples/cpp/route_guide/Makefile)
 that runs `protoc` for you with the appropriate plugin, input, and output (if
 you want to run this yourself, make sure you've installed protoc and followed
@@ -381,7 +381,7 @@ First we need to create a gRPC *channel* for our stub, specifying the server
 address and port we want to connect to - in our case we'll use no SSL:
 
 ```cpp
-grpc::CreateChannel("localhost:50051", grpc::InsecureCredentials());
+grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials());
 ```
 Note: In order to set additional options for the *channeL*, use the `grpc::CreateCustomChannel()` api with any special channel arguments - `grpc::ChannelArguments`
 
